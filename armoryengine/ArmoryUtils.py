@@ -457,7 +457,8 @@ if not os.path.exists(ARMORY_DB_DIR):
    os.makedirs(ARMORY_DB_DIR)
 
 
-BITCOIN_HOST = '127.0.0.1'
+BITCOIN_LOCAL_HOST = '127.0.0.1'
+BITCOIN_HOST = BITCOIN_LOCAL_HOST
 BITCOIN_LOCAL_TIMEOUT = 0.01
 BITCOIN_REMOTE_TIMEOUT = 0.5
 
@@ -1701,13 +1702,13 @@ def unicode_truncate(theStr, length, encoding='utf-8'):
 
 #############################################################################
 def satoshiIsAvailable(host=BITCOIN_HOST, port=BITCOIN_PORT):
-   if host == '127.0.0.1':
+   if not isinstance(port, (list,tuple)):
+      port = [port]
+
+   if BITCOIN_HOST == BITCOIN_LOCAL_HOST:
       timeout = BITCOIN_LOCAL_TIMEOUT
    else:
       timeout = BITCOIN_REMOTE_TIMEOUT
-
-   if not isinstance(port, (list,tuple)):
-      port = [port]
 
    for p in port:
       s = socket.socket()
