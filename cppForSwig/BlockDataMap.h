@@ -2,7 +2,7 @@
 //                                                                            //
 //  Copyright (C) 2016, goatpig.                                              //
 //  Distributed under the MIT license                                         //
-//  See LICENSE-MIT or https://opensource.org/licenses/MIT                    //                                      
+//  See LICENSE-MIT or https://opensource.org/licenses/MIT                    //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -36,6 +36,7 @@ using namespace std;
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 #endif
 
 #include "BlockObj.h"
@@ -78,16 +79,16 @@ struct BCTX
          {
             BinaryData noWitData;
             BinaryDataRef version(data_, 4);
-           
+
             auto& lastTxOut = txouts_.back();
             auto witnessOffset = lastTxOut.first + lastTxOut.second;
             BinaryDataRef txinout(data_ + 6, witnessOffset - 6);
             BinaryDataRef locktime(data_ + size_ - 4, 4);
-           
+
             noWitData.append(version);
             noWitData.append(txinout);
             noWitData.append(locktime);
-            
+
             BtcUtils::getHash256(noWitData, txHash_);
          }
          else
@@ -215,12 +216,12 @@ private:
 public:
    BlockData(void) {}
 
-   BlockData(uint32_t blockid) 
+   BlockData(uint32_t blockid)
       : uniqueID_(blockid)
    {}
 
    void deserialize(const uint8_t* data, size_t size,
-      const BlockHeader*, 
+      const BlockHeader*,
       function<unsigned int(void)> getID, bool checkMerkle,
       bool keepHashes);
 
@@ -249,7 +250,7 @@ public:
 
    BlockHeader createBlockHeader(void) const;
    const BinaryData& getHash(void) const { return blockHash_; }
-   
+
    TxFilter<TxFilterType> computeTxFilter(const vector<BinaryData>&) const;
    const TxFilter<TxFilterType>& getTxFilter(void) const { return txFilter_; }
    uint32_t uniqueID(void) const { return uniqueID_; }
@@ -363,7 +364,7 @@ public:
 
 	  mv.ptr_ = nullptr;
    }
-   
+
    ~BlockFileMapPointer(void)
    {
       if (ptr_ == nullptr)
@@ -392,16 +393,16 @@ class BlockDataLoader
 {
 private:
    map<uint32_t, shared_ptr<BlockDataFileMap>> fileMaps_;
-   
+
    mutex gcMu_, mu_;
    thread gcThread_;
    condition_variable gcCondVar_;
    bool run_ = true;
-   
-   //preload file in RAM to leverage cache hits on upcoming reads
-   const bool preloadFile_  = false; 
 
-   //prefetch next file, expecting the code to read it soon. Will preload 
+   //preload file in RAM to leverage cache hits on upcoming reads
+   const bool preloadFile_  = false;
+
+   //prefetch next file, expecting the code to read it soon. Will preload
    //it if the flag is set
    const bool prefetchNext_ = false;
 
@@ -412,7 +413,7 @@ private:
 
    function<void(void)> gcLambda_;
 
-private:   
+private:
 
    BlockDataLoader(const BlockDataLoader&) = delete; //no copies
 
@@ -420,7 +421,7 @@ private:
    uint32_t nameToIntID(const string& filename);
    string intIDToName(uint32_t fileid);
 
-   shared_future<shared_ptr<BlockDataFileMap>> 
+   shared_future<shared_ptr<BlockDataFileMap>>
       getNewBlockDataMap(uint32_t fileid);
 
 public:
@@ -436,7 +437,7 @@ public:
          run_ = false;
          gcCondVar_.notify_all();
       }
-      
+
       if (gcThread_.joinable())
          gcThread_.join();
    }

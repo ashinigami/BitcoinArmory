@@ -5,9 +5,9 @@
 //  See LICENSE-ATI or http://www.gnu.org/licenses/agpl.html                  //
 //                                                                            //
 //                                                                            //
-//  Copyright (C) 2016, goatpig                                               //            
+//  Copyright (C) 2016, goatpig                                               //
 //  Distributed under the MIT license                                         //
-//  See LICENSE-MIT or https://opensource.org/licenses/MIT                    //                                   
+//  See LICENSE-MIT or https://opensource.org/licenses/MIT                    //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -27,13 +27,13 @@ uint8_t BlockDataManagerConfig::scriptHashPrefix_;
 static bool scanFor(std::istream &in, const uint8_t * bytes, const unsigned len)
 {
    std::vector<uint8_t> ahead(len); // the bytes matched
-   
+
    in.read((char*)&ahead.front(), len);
    unsigned count = in.gcount();
    if (count < len) return false;
-   
+
    unsigned offset=0; // the index mod len which we're in ahead
-   
+
    do
    {
       bool found=true;
@@ -47,9 +47,9 @@ static bool scanFor(std::istream &in, const uint8_t * bytes, const unsigned len)
       }
       if (found)
          return true;
-      
+
       ahead[offset++%len] = in.get();
-      
+
    } while (!in.eof());
    return false;
 }
@@ -91,10 +91,10 @@ class BlockDataManager::BitcoinQtBlockFiles
       uint64_t filesize;
       uint64_t filesizeCumul;
    };
-   
+
    vector<BlkFile> blkFiles_;
    uint64_t totalBlockchainBytes_=0;
-   
+
    const BinaryData magicBytes_;
 
    class stopReadingHeaders
@@ -117,7 +117,7 @@ public:
       : blkFileLocation_(blkFileLocation), magicBytes_(magicBytes)
    {
    }
-   
+
    void detectAllBlkFiles()
    {
       unsigned numBlkFiles=0;
@@ -134,28 +134,28 @@ public:
          if(filesize == FILE_DOES_NOT_EXIST)
             break;
 
-         
+
          BlkFile f;
          f.fnum = numBlkFiles;
          f.path = path;
          f.filesize = filesize;
          f.filesizeCumul = totalBlockchainBytes_;
          blkFiles_.push_back(f);
-         
+
          totalBlockchainBytes_ += filesize;
-         
+
          numBlkFiles++;
       }
-   
+
       if(numBlkFiles==UINT16_MAX)
       {
          throw runtime_error("Error finding blockchain files (blkXXXX.dat)");
       }
    }
-   
+
    uint64_t totalBlockchainBytes() const { return totalBlockchainBytes_; }
    unsigned numBlockFiles() const { return blkFiles_.size(); }
-   
+
    uint64_t offsetAtStartOfFile(size_t fnum) const
    {
       if (fnum==0) return 0;
@@ -163,16 +163,16 @@ public:
          throw std::range_error("block file out of range");
       return blkFiles_[fnum].filesizeCumul;
    }
-   
+
    // find the location of the first block that is not in @p bc
    BlockFilePosition findFirstUnrecognizedBlockHeader(
       Blockchain &bc
-   ) 
+   )
    {
       map<HashString, BlockHeader> &allHeaders = bc.allHeaders();
-      
+
       size_t index=0;
-      
+
       for (; index < blkFiles_.size(); index++)
       {
          const BinaryData hash = getFirstHash(blkFiles_[index]);
@@ -181,20 +181,20 @@ public:
          { // not found in this file
             if (index == 0)
                return { 0, 0 };
-            
+
             break;
          }
       }
-      
+
       if (index == 0)
          return { 0, 0 };
       index--;
-      
+
       // ok, now "index" is for the last blkfile that we found a header in
       // now lets linearly search this file until we find an unrecognized blk
-      
+
       BlockFilePosition foundAtPosition{ 0, 0 };
-            
+
       bool foundTopBlock = false;
       auto topBlockHash = bc.top().getThisHash();
 
@@ -207,14 +207,14 @@ public:
       {
          // always set our position so that eventually it's at the end
          foundAtPosition = pos;
-         
+
          BlockHeader block;
          BinaryRefReader brr(blockheader);
          block.unserialize(brr);
-         
+
          const HashString blockhash = block.getThisHash();
          auto bhIter = allHeaders.find(blockhash);
-         
+
          if(bhIter == allHeaders.end())
             throw StopReading();
 
@@ -224,7 +224,7 @@ public:
          bhIter->second.setBlockFileNum(pos.first);
          bhIter->second.setBlockFileOffset(pos.second);
       };
-      
+
       uint64_t returnedOffset = UINT64_MAX;
       try
       {
@@ -233,7 +233,7 @@ public:
             0,
             stopIfBlkHeaderRecognized
          );
-         
+
       }
       catch (StopReading&)
       {
@@ -278,7 +278,7 @@ public:
          try
          {
             for (; fnum > -1; fnum--)
-               readHeadersFromFile(blkFiles_[fnum], 0, 
+               readHeadersFromFile(blkFiles_[fnum], 0,
                                    checkBlkHash);
          }
          catch (StopReading&)
@@ -292,7 +292,7 @@ public:
             //can't find the top header, let's just rescan all headers
             LOGERR << "Failed to find last known top block hash in "
                "blk files. Rescanning all headers";
-            
+
             return BlockFilePosition(0, 0);
          }
 
@@ -304,7 +304,7 @@ public:
          }
          catch (StopReading&)
          {
-            //so we are indeed missing some block headers. Let's just scan the 
+            //so we are indeed missing some block headers. Let's just scan the
             //blocks folder for headers
             foundAtPosition.first = 0;
             foundAtPosition.second = 0;
@@ -329,7 +329,7 @@ public:
          return startAt;
       if (startAt.first > blkFiles_.size())
          throw std::runtime_error("blkFile out of range");
-         
+
       uint64_t finishOffset=startAt.second;
 
       try
@@ -352,7 +352,7 @@ public:
 
       return { startAt.first -1, finishOffset };
    }
-   
+
    BlockFilePosition readRawBlocks(
       BlockFilePosition startAt,
       BlockFilePosition stopAt,
@@ -369,7 +369,7 @@ public:
          throw std::runtime_error("blkFile out of range");
 
       stopAt.first = (std::min)(stopAt.first, blkFiles_.size());
-         
+
       uint64_t finishLocation=stopAt.second;
       while (startAt.first <= stopAt.first)
       {
@@ -382,7 +382,7 @@ public:
          startAt.second = 0;
          startAt.first++;
       }
-      
+
       return { startAt.first-1, finishLocation };
    }
 
@@ -469,13 +469,13 @@ private:
          int fd = _open(path.c_str(), _O_RDONLY | _O_BINARY);
          if (fd == -1)
             throw std::runtime_error("failed to open file");
-         
+
          HANDLE fdHandle = (HANDLE)_get_osfhandle(fd);
          uint32_t sizelo = fileSize & 0xffffffff;
          uint32_t sizehi = fileSize >> 16 >> 16;
 
 
-         HANDLE mh = CreateFileMapping(fdHandle, NULL, 
+         HANDLE mh = CreateFileMapping(fdHandle, NULL,
                               PAGE_READONLY | SEC_COMMIT,
                               sizehi, sizelo, NULL);
          if (mh == NULL)
@@ -530,7 +530,7 @@ private:
       // short circuit
       if (blockFileOffset >= stopBefore)
          return blockFileOffset;
-      
+
       MapAndSize mas = getMapOfFile(f.path, f.filesize);
       BinaryData fileMagic(4);
       memcpy(fileMagic.getPtr(), mas.filemap_, 4);
@@ -542,7 +542,7 @@ private:
       }
       // Seek to the supplied offset
       uint64_t pos = blockFileOffset;
-      
+
       {
          BinaryDataRef magic, szstr, rawBlk;
          // read the file, we can't go past what we think is the end,
@@ -553,7 +553,7 @@ private:
             pos += 4;
             if (pos >= f.filesize)
                break;
-               
+
             if(magic != magicBytes_)
             {
                // start scanning for MagicBytes
@@ -564,20 +564,20 @@ private:
                   LOGERR << "No more blocks found in file " << f.path;
                   break;
                }
-               
+
                pos += offset +4;
                LOGERR << "Next block header found at offset " << pos-4;
             }
-            
+
             szstr = BinaryDataRef(mas.filemap_ + pos, 4);
             pos += 4;
             uint32_t blkSize = READ_UINT32_LE(szstr.getPtr());
-            if(pos >= f.filesize) 
+            if(pos >= f.filesize)
                break;
 
             rawBlk = BinaryDataRef(mas.filemap_ +pos, blkSize);
             pos += blkSize;
-            
+
             try
             {
                blockDataCallback(rawBlk, { f.fnum, blockFileOffset }, blkSize);
@@ -593,14 +593,14 @@ private:
             blockFileOffset = pos;
          }
       }
-      
+
       LOGINFO << "Reading raw blocks finished at file "
          << f.fnum << " offset " << blockFileOffset;
-      
+
       unmapFile(mas);
       return blockFileOffset;
    }
-   
+
    uint64_t readHeadersFromFile(
       const BlkFile &f,
       uint64_t blockFileOffset,
@@ -626,7 +626,7 @@ private:
          }
       }
       is.seekg(blockFileOffset, ios::beg);
-      
+
       {
          const uint32_t HEAD_AND_NTX_SZ = HEADER_SIZE + 10; // enough
          BinaryData magic(4), szstr(4), rawHead(HEAD_AND_NTX_SZ);
@@ -635,7 +635,7 @@ private:
             is.read((char*)magic.getPtr(), 4);
             if (is.eof())
                break;
-               
+
             if(magic != magicBytes_)
             {
                // I have to start scanning for MagicBytes
@@ -643,10 +643,10 @@ private:
                {
                   break;
                }
-               
+
                LOGERR << "Next block header found at offset " << uint64_t(is.tellg())-4;
             }
-            
+
             is.read(reinterpret_cast<char*>(szstr.getPtr()), 4);
             uint32_t nextBlkSize = READ_UINT32_LE(szstr.getPtr());
             if(is.eof()) break;
@@ -661,15 +661,15 @@ private:
                blockFileOffset += nextBlkSize + 8;
                throw stopReadingHeaders(f.fnum, blockFileOffset);
             }
-            
+
             blockFileOffset += nextBlkSize+8;
             is.seekg(nextBlkSize - HEAD_AND_NTX_SZ, ios::cur);
          }
       }
-      
+
       return blockFileOffset;
    }
-      
+
 
    BinaryData getFirstHash(const BlkFile &f) const
    {
@@ -681,9 +681,9 @@ private:
          return {};
       }
       is.seekg(0, ios::beg);
-      
+
       BinaryData magic(4), szstr(4), rawHead(HEADER_SIZE);
-      
+
       is.read(magic.getCharPtr(), 4);
       is.read(szstr.getCharPtr(), 4);
       if(magic != magicBytes_)
@@ -691,7 +691,7 @@ private:
          LOGERR << "Magic bytes mismatch.  Block file is for another network!";
          return {};
       }
-      
+
       is.read(rawHead.getCharPtr(), HEADER_SIZE);
       BinaryData h(32);
       BtcUtils::getHash256(rawHead, h);
@@ -741,7 +741,7 @@ BlockDataManagerConfig::BlockDataManagerConfig()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-string BlockDataManagerConfig::portToString(unsigned port) 
+string BlockDataManagerConfig::portToString(unsigned port)
 {
    stringstream ss;
    ss << port;
@@ -836,6 +836,9 @@ void BlockDataManagerConfig::parseArgs(int argc, char* argv[])
    --dbdir: path to folder containing the database files. If empty, a new db
    will be created there
 
+   --satoshi-host: hostname of the bitcoin node. Useful for container setups,
+   but unencrypted remote connections should be avoided.
+
    --satoshi-datadir: path to blockchain data folder (blkXXXXX.dat files)
 
    --spawnId: id as a string with which the db was spawned. Certain methods like
@@ -917,6 +920,13 @@ void BlockDataManagerConfig::parseArgs(int argc, char* argv[])
                getline(ss, argstr, '=');
 
                blkFileLocation_ = stripQuotes(argstr);
+            }
+            else if (str == "--satoshi-host")
+            {
+               string argstr;
+               getline(ss, argstr, '=');
+
+               btcHost_ = stripQuotes(argstr);
             }
             else if (str == "--spawnId")
             {
@@ -1054,7 +1064,7 @@ void BlockDataManagerConfig::parseArgs(int argc, char* argv[])
 
          dbDir_ = move(newPath);
       }
-      
+
       if (blkFileLocation_.c_str()[0] == '~')
       {
          auto newPath = userPath;
@@ -1085,7 +1095,7 @@ void BlockDataManagerConfig::parseArgs(int argc, char* argv[])
       };
 
       testPath(dataDir_, 6);
-   
+
       //create dbdir if was set automatically
       if (autoDbDir)
       {
@@ -1133,45 +1143,45 @@ void BlockDataManagerConfig::appendPath(string& base, const string& add)
 class ProgressMeasurer
 {
    const uint64_t total_;
-   
+
    time_t then_;
    uint64_t lastSample_=0;
-   
+
    double avgSpeed_=0.0;
-   
-   
+
+
 public:
    ProgressMeasurer(uint64_t total)
       : total_(total)
    {
       then_ = time(0);
    }
-   
+
    void advance(uint64_t to)
    {
       static const double smoothingFactor=.75;
-      
+
       if (to == lastSample_) return;
       const time_t now = time(0);
       if (now == then_) return;
-      
+
       if (now < then_+10) return;
-      
+
       double speed = (to-lastSample_)/double(now-then_);
-      
+
       if (lastSample_ == 0)
          avgSpeed_ = speed;
       lastSample_ = to;
 
       avgSpeed_ = smoothingFactor*speed + (1-smoothingFactor)*avgSpeed_;
-      
+
       then_ = now;
    }
 
    double fractionCompleted() const { return lastSample_/double(total_); }
-   
+
    double unitsPerSecond() const { return avgSpeed_; }
-   
+
    time_t remainingSeconds() const
    {
       return (total_-lastSample_)/unitsPerSecond();
@@ -1184,13 +1194,13 @@ class BlockDataManager::BDM_ScrAddrFilter : public ScrAddrFilter
 {
    BlockDataManager *const bdm_;
    //0: didn't start, 1: is initializing, 2: done initializing
-   
+
 public:
    BDM_ScrAddrFilter(BlockDataManager *bdm)
       : ScrAddrFilter(bdm->getIFace(), bdm->config().armoryDbType_)
       , bdm_(bdm)
    {
-   
+
    }
 
    virtual shared_ptr<ScrAddrFilter> copy()
@@ -1204,9 +1214,9 @@ protected:
    {
       return bdm_->BDMstate_ != BDM_offline;
    }
-   
+
    virtual BinaryData applyBlockRangeToDB(
-      uint32_t startBlock, uint32_t endBlock, 
+      uint32_t startBlock, uint32_t endBlock,
       const vector<string>& wltIDs
    )
    {
@@ -1242,7 +1252,7 @@ protected:
          //write sdbi
          putSubSshSDBI(sdbi);
       }
-      
+
       const auto progress
          = [&](BDMPhase phase, double prog, unsigned time, unsigned numericProgress)
       {
@@ -1254,12 +1264,12 @@ protected:
 
       return bdm_->applyBlockRangeToDB(progress, startBlock, endBlock, *this, false);
    }
-   
+
    virtual uint32_t currentTopBlockHeight() const
    {
       return bdm_->blockchain()->top().getBlockHeight();
    }
-   
+
    virtual void wipeScrAddrsSSH(const vector<BinaryData>& saVec)
    {
       bdm_->getIFace()->resetHistoryForAddressVector(saVec);
@@ -1284,7 +1294,7 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 BlockDataManager::BlockDataManager(
-   const BlockDataManagerConfig &bdmConfig) 
+   const BlockDataManagerConfig &bdmConfig)
    : config_(bdmConfig)
 {
 
@@ -1293,10 +1303,10 @@ BlockDataManager::BlockDataManager(
       exceptPtr_ = bdmConfig.exceptionPtr_;
       return;
    }
-   
+
    blockchain_ = make_shared<Blockchain>(config_.genesisBlockHash_);
 
-   iface_ = new LMDBBlockDatabase(blockchain_, 
+   iface_ = new LMDBBlockDatabase(blockchain_,
       config_.blkFileLocation_, config_.armoryDbType_);
 
    readBlockHeaders_ = make_shared<BitcoinQtBlockFiles>(
@@ -1307,15 +1317,15 @@ BlockDataManager::BlockDataManager(
    try
    {
       openDatabase();
-      
+
       if (bdmConfig.nodeType_ == Node_BTC)
       {
-         networkNode_ = make_shared<BitcoinP2P>("127.0.0.1", config_.btcPort_,
+         networkNode_ = make_shared<BitcoinP2P>(config_.btcHost_, config_.btcPort_,
             *(uint32_t*)config_.magicBytes_.getPtr());
       }
       else if (bdmConfig.nodeType_ == Node_UnitTest)
       {
-         networkNode_ = make_shared<NodeUnitTest>("127.0.0.1", config_.btcPort_,
+         networkNode_ = make_shared<NodeUnitTest>(config_.btcHost_, config_.btcPort_,
             *(uint32_t*)config_.magicBytes_.getPtr());
       }
       else
@@ -1369,7 +1379,7 @@ BlockDataManager::~BlockDataManager()
    iface_->closeDatabases();
    scrAddrData_.reset();
    delete iface_;
-   
+
    blockchain_.reset();
 }
 
@@ -1378,15 +1388,15 @@ BlockDataManager::~BlockDataManager()
 // "reapplying" the blockdata to the databases.  Basically assumes that only
 // raw blockdata is stored in the DB with no ssh objects.  This goes through
 // and processes every Tx, creating new SSHs if not there, and creating and
-// marking-spent new TxOuts.  
+// marking-spent new TxOuts.
 BinaryData BlockDataManager::applyBlockRangeToDB(
-   ProgressCallback prog, 
-   uint32_t blk0, uint32_t blk1, 
+   ProgressCallback prog,
+   uint32_t blk0, uint32_t blk1,
    ScrAddrFilter& scrAddrData,
    bool updateSDBI)
 {
    // Start scanning and timer
-   BlockchainScanner bcs(blockchain_, iface_, &scrAddrData, 
+   BlockchainScanner bcs(blockchain_, iface_, &scrAddrData,
       *blockFiles_.get(), config_.threadCount_, config_.ramUsage_,
       prog, config_.reportProgress_);
    bcs.scan_nocheck(blk0);
@@ -1397,7 +1407,7 @@ BinaryData BlockDataManager::applyBlockRangeToDB(
 }
 
 /////////////////////////////////////////////////////////////////////////////
-/*  This is not currently being used, and is actually likely to change 
+/*  This is not currently being used, and is actually likely to change
  *  a bit before it is needed, so I have just disabled it.
 vector<TxRef*> BlockDataManager::findAllNonStdTx(void)
 {
@@ -1438,14 +1448,14 @@ vector<TxRef*> BlockDataManager::findAllNonStdTx(void)
          ///// LOOP OVER ALL TXOUT IN BLOCK /////
          for(uint32_t iout=0; iout<tx.getNumTxOut(); iout++)
          {
-            
+
             TxOut txout = tx.getTxOutCopy(iout);
             if(txout.getScriptType() == TXOUT_SCRIPT_UNKNOWN)
             {
-               txVectOut.push_back(&tx);               
+               txVectOut.push_back(&tx);
                cout << "Attempting to interpret TXOUT script:" << endl;
                cout << "Block: " << h << " Tx: " << itx << endl;
-               cout << "ThisOut: " << txout.getParentTxPtr()->getThisHash().toHexStr() 
+               cout << "ThisOut: " << txout.getParentTxPtr()->getThisHash().toHexStr()
                     << ", "        << txout.getIndex() << endl;
                cout << "Raw Script: " << txout.getScript().toHexStr() << endl;
                cout << "Raw Tx: " << txout.getParentTxPtr()->serialize().toHexStr() << endl;
@@ -1472,7 +1482,7 @@ vector<TxRef*> BlockDataManager::findAllNonStdTx(void)
 // to the list of "RegisteredScrAddr" objects.  Now, the DB defaults to super-
 // node mode and tracks all that for us on disk.  So when we start up, rather
 // than having to search the blockchain, we just look the StoredScriptHistory
-// list for each of our "RegisteredScrAddr" objects, and then pull all the 
+// list for each of our "RegisteredScrAddr" objects, and then pull all the
 // relevant tx from the database.  After that, the BDM operates 99% identically
 // to before.  We just didn't have to do a full scan to fill the RegTx list
 //
@@ -1480,7 +1490,7 @@ vector<TxRef*> BlockDataManager::findAllNonStdTx(void)
 // the TxIOPair map -- all the data is tracked by the DB and we could pull it
 // directly.  But that would require reorganizing a ton of BDM code, and may
 // be difficult to guarantee that all the previous functionality was there and
-// working.  This way, all of our previously-tested code remains mostly 
+// working.  This way, all of our previously-tested code remains mostly
 // untouched
 
 
@@ -1557,9 +1567,9 @@ void BlockDataManager::loadDiskState(
    const ProgressCallback &progress,
    bool forceRescan
 )
-{  
+{
    BDMstate_ = BDM_initializing;
-         
+
    blockFiles_ = make_shared<BlockFiles>(config_.blkFileLocation_);
    dbBuilder_ = make_shared<DatabaseBuilder>(*blockFiles_, *this, progress);
    dbBuilder_->init();
@@ -1574,7 +1584,7 @@ void BlockDataManager::loadDiskState(
 Blockchain::ReorganizationState BlockDataManager::readBlkFileUpdate(
    const BlockDataManager::BlkFileUpdateCallbacks& callbacks
 )
-{ 
+{
    return dbBuilder_->update();
 }
 
@@ -1597,7 +1607,7 @@ StoredHeader BlockDataManager::getMainBlockFromDB(uint32_t hgt) const
    uint8_t dupMain = iface_->getValidDupIDForHeight(hgt);
    return getBlockFromDB(hgt, dupMain);
 }
-   
+
 ////////////////////////////////////////////////////////////////////////////////
 shared_ptr<ScrAddrFilter> BlockDataManager::getScrAddrFilter(void) const
 {
@@ -1616,7 +1626,7 @@ shared_future<bool> BlockDataManager::registerAddressBatch(
       waitOnPromise->set_value(refresh);
    };
 
-   shared_ptr<ScrAddrFilter::WalletInfo> wltInfo = 
+   shared_ptr<ScrAddrFilter::WalletInfo> wltInfo =
       make_shared<ScrAddrFilter::WalletInfo>();
    wltInfo->scrAddrSet_ = addrSet;
    wltInfo->callback_ = callback;
@@ -1637,7 +1647,7 @@ void BlockDataManager::enableZeroConf(bool clearMempool)
    zcEnabled_ = true;
 
    auto zcFilter = [this](void)->shared_ptr<set<ScrAddrFilter::AddrSyncState>>
-   { 
+   {
       return scrAddrData_->getScrAddrSet();
    };
 

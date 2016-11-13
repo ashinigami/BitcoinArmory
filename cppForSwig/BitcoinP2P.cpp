@@ -2,7 +2,7 @@
 //                                                                            //
 //  Copyright (C) 2016, goatpig.                                              //
 //  Distributed under the MIT license                                         //
-//  See LICENSE-MIT or https://opensource.org/licenses/MIT                    //                                      
+//  See LICENSE-MIT or https://opensource.org/licenses/MIT                    //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -129,7 +129,7 @@ vector<uint8_t> Payload::serialize(uint32_t magic_word) const
 {
    //serialize payload
    auto payload_size = serialize_inner(nullptr);
-   
+
    vector<uint8_t> msg;
    msg.resize(MESSAGE_HEADER_LEN + payload_size);
    if (payload_size > 0)
@@ -173,7 +173,7 @@ vector<unique_ptr<Payload>> Payload::deserialize(
 
    if (data.size() < MESSAGE_HEADER_LEN)
       throw BitcoinMessageDeserError("invalid header size");
-   
+
    size_t offset = 0, totalsize = data.size();
    vector<unique_ptr<Payload>> retvec;
 
@@ -223,7 +223,7 @@ vector<unique_ptr<Payload>> Payload::deserialize(
       //get and verify length
       uint32_t* length = (uint32_t*)(ptr + PAYLOAD_LENGTH_OFFSET);
       auto localOffset = offset;
-      
+
       //at this point we don't want to reparse this message if the the
       //deser operation fails
       offset += 4;
@@ -322,7 +322,7 @@ void BitcoinNetAddr::deserialize(BinaryRefReader brr)
    if (brr.getSize() != NETADDR_NOTIME)
       throw BitcoinMessageDeserError("invalid netaddr size");
 
-   services_ = brr.get_uint64_t(); 
+   services_ = brr.get_uint64_t();
    auto ipv6bdr = brr.get_BinaryDataRef(16);
    memcpy(&ipV6_, ipv6bdr.getPtr(), 16);
 
@@ -392,7 +392,7 @@ size_t Payload_Version::serialize_inner(uint8_t* dataptr) const
    size_t serlen = varintlen + userAgent_.length() + VERSION_MINLENGTH;
 
    uint8_t* vhptr = dataptr;
-   
+
    memcpy(vhptr, &vheader_.version_, 4);
    memcpy(vhptr +4, &vheader_.services_, 8);
    memcpy(vhptr + 12, &vheader_.timestamp_, 8);
@@ -414,7 +414,7 @@ size_t Payload_Version::serialize_inner(uint8_t* dataptr) const
    memcpy(ptr, &startHeight_, 4);
    ptr += 4;
    *ptr = 1;
-   
+
 
    return serlen;
 }
@@ -452,7 +452,7 @@ size_t Payload_Ping::serialize_inner(uint8_t* dataptr) const
 {
    if (nonce_ == UINT64_MAX)
       return 0;
-   
+
    if (dataptr == nullptr)
       return 8;
 
@@ -796,7 +796,7 @@ void BitcoinP2P::connectLoop(void)
       //wait on threads
       if (processThr.joinable())
          processThr.join();
-      
+
       //close socket to guarantee select returns
       if (binSocket_.isValid())
          binSocket_.closeSocket();
@@ -972,7 +972,7 @@ void BitcoinP2P::processInv(unique_ptr<Payload> payload)
 
    //order entries by type
    map<InvType, vector<InvEntry>> orderedEntries;
-   
+
    for (auto& entry : invptr->invVector_)
    {
       auto& invvec = orderedEntries[entry.invtype_];
@@ -1049,7 +1049,7 @@ void BitcoinP2P::processGetData(unique_ptr<Payload> payload)
 
       auto&& payload = *payloadIter->second.payload_.get();
       sendMessage(move(payload));
-      
+
       try
       {
          payloadIter->second.promise_->set_value(true);

@@ -5,9 +5,9 @@
 //  See LICENSE-ATI or http://www.gnu.org/licenses/agpl.html                  //
 //                                                                            //
 //                                                                            //
-//  Copyright (C) 2016, goatpig                                               //            
+//  Copyright (C) 2016, goatpig                                               //
 //  Distributed under the MIT license                                         //
-//  See LICENSE-MIT or https://opensource.org/licenses/MIT                    //                                   
+//  See LICENSE-MIT or https://opensource.org/licenses/MIT                    //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -20,6 +20,7 @@
 #include <set>
 #include <future>
 #include <exception>
+#include <unistd.h>
 
 #include "Blockchain.h"
 #include "BinaryData.h"
@@ -72,7 +73,7 @@ typedef enum
   DB_BUILD_SCAN
 } DB_BUILD_PHASE;
 
-typedef enum 
+typedef enum
 {
    BDM_offline,
    BDM_initializing,
@@ -102,15 +103,15 @@ class BlockDataManager
 {
 private:
    BlockDataManagerConfig config_;
-   
+
    class BitcoinQtBlockFiles;
    shared_ptr<BitcoinQtBlockFiles> readBlockHeaders_;
-   
+
    // This is our permanent link to the two databases used
    LMDBBlockDatabase* iface_ = nullptr;
-   
+
    BlockFilePosition blkDataPosition_ = {0, 0};
-   
+
    // Reorganization details
 
    class BDM_ScrAddrFilter;
@@ -129,7 +130,7 @@ private:
    unsigned checkTransactionCount_ = 0;
 
 public:
-   typedef function<void(BDMPhase, double,unsigned, unsigned)> ProgressCallback;   
+   typedef function<void(BDMPhase, double,unsigned, unsigned)> ProgressCallback;
    shared_ptr<BitcoinP2P> networkNode_;
    shared_future<bool> isReadyFuture_;
 
@@ -142,25 +143,25 @@ public:
 
    shared_ptr<Blockchain> blockchain() { return blockchain_; }
    shared_ptr<Blockchain> blockchain() const { return blockchain_; }
-   
+
    const BlockDataManagerConfig &config() const { return config_; }
-   
+
    LMDBBlockDatabase *getIFace(void) {return iface_;}
-   
+
    shared_future<bool> registerAddressBatch(
       const set<BinaryData>& addrSet, bool isNew);
-   
+
    /////////////////////////////////////////////////////////////////////////////
    // Get the parameters of the network as they've been set
-   const BinaryData& getGenesisHash(void) const  
+   const BinaryData& getGenesisHash(void) const
    { return config_.genesisBlockHash_; }
-   const BinaryData& getGenesisTxHash(void) const 
+   const BinaryData& getGenesisTxHash(void) const
    { return config_.genesisTxHash_; }
-   const BinaryData& getMagicBytes(void) const   
+   const BinaryData& getMagicBytes(void) const
    { return config_.magicBytes_; }
 
    void openDatabase(void);
-   
+
    void doInitialSyncOnLoad(const ProgressCallback &progress);
    void doInitialSyncOnLoad_Rescan(const ProgressCallback &progress);
    void doInitialSyncOnLoad_Rebuild(const ProgressCallback &progress);
@@ -172,7 +173,7 @@ public:
    {
       std::function<void()> headersRead, headersUpdated, blockDataLoaded;
    };
-   
+
    void registerBDVwithZCcontainer(BDV_Server_Object*);
    void unregisterBDVwithZCcontainer(const string&);
 
@@ -184,18 +185,18 @@ private:
       const ProgressCallback &progress,
       bool doRescan=false
    );
-   
+
 public:
    Blockchain::ReorganizationState readBlkFileUpdate(
       const BlkFileUpdateCallbacks &callbacks=BlkFileUpdateCallbacks());
 
-   BinaryData applyBlockRangeToDB(ProgressCallback, 
+   BinaryData applyBlockRangeToDB(ProgressCallback,
                             uint32_t blk0, uint32_t blk1,
                             ScrAddrFilter& scrAddrData,
                             bool updateSDBI = true);
 
    uint32_t getTopBlockHeight() const {return blockchain_->top().getBlockHeight();}
-      
+
    uint8_t getValidDupIDForHeight(uint32_t blockHgt) const
    { return iface_->getValidDupIDForHeight(blockHgt); }
 
@@ -226,16 +227,16 @@ public:
    void blockUntilReady(void) const { isReadyFuture_.wait(); }
    bool isReady(void) const
    {
-      return 
-         isReadyFuture_.wait_for(chrono::seconds(0)) == 
+      return
+         isReadyFuture_.wait_for(chrono::seconds(0)) ==
          std::future_status::ready;
    }
 
    vector<string> getNextWalletIDToScan(void);
-   
+
    void resetDatabases(ResetDBMode mode);
-   
-   void terminateAllScans(void) 
+
+   void terminateAllScans(void)
    {
       ScrAddrFilter::shutdown();
    }

@@ -42,12 +42,13 @@ struct BlockDataManagerConfig
    string logFilePath_;
 
    string spawnID_;
-   
+
    BinaryData genesisBlockHash_;
    BinaryData genesisTxHash_;
    BinaryData magicBytes_;
 
    NodeType nodeType_ = Node_BTC;
+   string btcHost_;
    string btcPort_;
    string fcgiPort_;
 
